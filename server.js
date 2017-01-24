@@ -14,20 +14,23 @@ app.locals.secrets = {
   1: "one"
 }
 
+const environment = process.env.NODE_ENV || 'development';
+const configuration = require('./knexfile')[environment];
+const database = require('knex')(configuration);
+
 app.get('/', (request, response) => {
   response.send('Its a secret to everyone')
 })
 
-app.get('/home', (request, response) => {
-  response.send('Its a secret to everyone')
-})
-
-app.get('/about', (request, response) => {
-  response.send('Its a secret to everyone')
-})
-
 app.get('/api/secrets', (request, response) => {
-  response.json(app.locals.secrets)
+  database('secrets').select()
+          .then(function(secrets) {
+            // console.log("Urls: ", urls)
+            response.status(200).json(secrets);
+          })
+          .catch(function(error) {
+            console.error('somethings wrong with db')
+          });
 })
 
 app.post('/api/secrets', (request, response) => {
@@ -40,6 +43,15 @@ app.post('/api/secrets', (request, response) => {
 })
 
 
+app.get('/api/owners/:id', (request, response) => {
+  database('secrets').where('owner_id', request.params.id).select()
+          .then(function(secrets) {
+            response.status(200).json(secrets);
+          })
+          .catch(function(error) {
+            console.error('somethings wrong with redirect')
+          });
+})
 
 app.get('/api/secrets/:id', (request, response) => {
   const { id } = request.params
