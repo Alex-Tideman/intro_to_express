@@ -8,11 +8,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.set('port', process.env.PORT || 3000)
 app.locals.title = 'Secret Box'
-app.locals.secrets = {
-  wowow: "I am a banana",
-  food: "I hate mash potatoes",
-  1: "one"
-}
 
 const environment = process.env.NODE_ENV || 'development';
 const configuration = require('./knexfile')[environment];
@@ -62,32 +57,39 @@ app.get('/api/owners/:id', (request, response) => {
 
 app.get('/api/secrets/:id', (request, response) => {
   const { id } = request.params
-  const message = app.locals.secrets[id]
-
-  !message ? response.sendStatus(404) : response.json({ id, message })
+  database('secrets').where('id', id).first()
+          .then(function(secret) {
+            response.status(200).json(secret);
+          })
+          .catch(function(error) {
+            console.error('somethings wrong with db call for a secret')
+          });
 })
 
-app.patch('/api/secrets/:id', (request, response) => {
+app.put('/api/secrets/:id', (request, response) => {
   const { id } = request.params
-  const { message } = request.body
+  const { message, owner_id } = request.body
 
-  if(!app.locals.secrets[id]) {
-    response.sendStatus(404)
-  }
-
-  app.locals.secrets[id] = message
-  response.json({ id, message })
+  database('secrets').where('id', id).first()
+          .update({ message, owner_id })
+          .then(function(secret) {
+            response.status(200).json({ message, owner_id });
+          })
+          .catch(function(error) {
+            console.error('somethings wrong with db call for a secret')
+          });
 })
 
 app.delete('/api/secrets/:id', (request, response) => {
   const { id } = request.params
 
-  if(!app.locals.secrets[id]) {
-    response.sendStatus(404)
-  }
-
-  delete app.locals.secrets[id]
-  response.json({ message: "secret deleted" })
+  database('secrets').where('id', id).first().del()
+          .then(function(secret) {
+            response.status(200).json({ message: "Secret deleted"});
+          })
+          .catch(function(error) {
+            console.error('somethings wrong with db delete call')
+          });
 })
 
 
