@@ -25,7 +25,6 @@ app.get('/', (request, response) => {
 app.get('/api/secrets', (request, response) => {
   database('secrets').select()
           .then(function(secrets) {
-            // console.log("Urls: ", urls)
             response.status(200).json(secrets);
           })
           .catch(function(error) {
@@ -34,12 +33,20 @@ app.get('/api/secrets', (request, response) => {
 })
 
 app.post('/api/secrets', (request, response) => {
-  const { message } = request.body
+  const { message, owner_id } = request.body
   const id = md5(message)
 
-  app.locals.secrets[id] = message
-
-  response.json({ id, message })
+  const secret = { id, message, owner_id, created_at: new Date };
+  database('secrets').insert(secret)
+  .then(function() {
+    database('secrets').select()
+            .then(function(secrets) {
+              response.status(200).json(secrets);
+            })
+            .catch(function(error) {
+              console.error('somethings wrong with db')
+            });
+  })
 })
 
 
